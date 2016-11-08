@@ -17,58 +17,6 @@ typedef ai_real Decimal;
 
 
 
-static Eigen::Matrix<ai_real, Eigen::Dynamic, Eigen::Dynamic> 
-laplacian_matrix(
-	const std::vector<std::vector<uint32_t>>& vertices_adj,
-	uint32_t number_of_vertices)
-{
-	const uint32_t N = number_of_vertices;
-	Eigen::Matrix<ai_real, Eigen::Dynamic, Eigen::Dynamic> D(N, N);
-	Eigen::Matrix<ai_real, Eigen::Dynamic, Eigen::Dynamic> W(N, N);
-	Eigen::Matrix<ai_real, Eigen::Dynamic, Eigen::Dynamic> T(N, N);
-	D.setZero();
-	W.setZero();
-	
-
-
-	int i = 0;
-	for (const std::vector<uint32_t> adj : vertices_adj)
-	{
-		D(i, i) = (ai_real)adj.size() - 1;	// number of neighbours except itself
-
-		std::cout << "\ni: " << i << std::endl;
-
-		for (const uint32_t vi : adj)
-		//for (uint32_t adj_ind = 1; adj_ind < adj.size(); ++adj_ind)
-		{
-		//	uint32_t vi = adj[adj_ind];
-			//std::cout << ' ' << vi;
-
-			if (vi == i)
-				W(i, vi) = 0;
-			else
-				W(i, vi) = 1;
-		}
-
-		i++;
-	}
-
-	std::cout << "\nD: " << std::endl << D << std::endl << std::endl;
-	std::cout << "\nW: " << std::endl << W << std::endl << std::endl;
-
-
-	T.setIdentity();
-	T = T - D.inverse() * W;
-
-	std::cout << "\nT: " << std::endl << T << std::endl << std::endl;
-	std::cout << std::endl;
-
-	return T;
-
-}
-
-
-
 
 
 void laplacian_filter(
@@ -234,32 +182,7 @@ int main(int argc, char* argv[])
 	}
 
 
-	
 
-#if 0
-
-	Eigen::Matrix<ai_real, Eigen::Dynamic, Eigen::Dynamic> T = laplacian_matrix(vertices_adj, mesh->mNumVertices);
-	Eigen::Matrix<ai_real, Eigen::Dynamic, Eigen::Dynamic> P(mesh->mNumVertices, 3);
-	
-	for (uint32_t i = 0; i < mesh->mNumVertices; ++i)
-	{
-		const aiVector3D& v = mesh->mVertices[i];
-		P.row(i) << v.x, v.y, v.z;
-	}
-
-	std::cout << "\nP" << std::endl << P << std::endl;
-
-
-	Eigen::Matrix<ai_real, Eigen::Dynamic, Eigen::Dynamic> M = T * P;
-	Eigen::Matrix<ai_real, Eigen::Dynamic, Eigen::Dynamic> M_P = M - P;
-
-	std::cout << "\nM" << std::endl << M << std::endl;
-	std::cout << "\nM - P" << std::endl << M_P<< std::endl;
-
-	Eigen::Matrix<ai_real, Eigen::Dynamic, Eigen::Dynamic> MT = M.transpose();
-	std::memcpy(mesh->mVertices, MT.data(), sizeof(aiVector3D) * mesh->mNumVertices);
-
-#else
 	//
 	// Computing filter
 	//
@@ -281,7 +204,7 @@ int main(int argc, char* argv[])
 		}
 	}
 	delete[] vertices_output;
-#endif
+
 
 	Assimp::Exporter exporter;
 	aiReturn ret = exporter.Export(scene, output_format, output_filename, scene->mFlags);
