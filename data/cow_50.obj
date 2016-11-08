@@ -1,6 +1,8 @@
 # File produced by Open Asset Import Library (http://www.assimp.sf.net)
 # (assimp v3.3.10147455)
 
+mtllib cow_50.obj.mtl
+
 # 2903 vertex positions
 v  2.14020586013794 -0.7218421101570129 -0.6584023833274841
 v  2.209342956542969 -0.8479050397872925 -0.5957178473472595
