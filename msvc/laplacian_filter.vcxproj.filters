@@ -9,15 +9,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\laplacian_filter\laplacian_filter.cpp">
+    <ClCompile Include="..\src\laplacian_filter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\laplacian_filter\VertexTriangleAdjacency.cpp">
+    <ClCompile Include="..\src\VertexTriangleAdjacency.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\laplacian_filter\VertexTriangleAdjacency.h">
+    <ClInclude Include="..\src\VertexTriangleAdjacency.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

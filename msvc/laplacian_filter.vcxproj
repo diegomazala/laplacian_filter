@@ -11,11 +11,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\laplacian_filter\laplacian_filter.cpp" />
-    <ClCompile Include="..\src\laplacian_filter\VertexTriangleAdjacency.cpp" />
+    <ClCompile Include="..\src\laplacian_filter.cpp" />
+    <ClCompile Include="..\src\VertexTriangleAdjacency.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\laplacian_filter\VertexTriangleAdjacency.h" />
+    <ClInclude Include="..\src\VertexTriangleAdjacency.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7F6AD3AC-ECD7-45D1-B86B-AE468B9AC4D5}</ProjectGuid>
