@@ -107,7 +107,6 @@ int main(int argc, char* argv[])
 		<< "Default          : ./laplacian_filter.exe ../../data/teddy.obj obj 1" << std::endl
 		<< std::endl;
 
-	const int Dimension = 3;
 	const std::string input_filename = (argc > 1) ? argv[1] : "../../data/teddy.obj";
 	const std::string output_format = (argc > 2) ? argv[2] : "obj";
 	const uint32_t iterations = (argc > 3) ? atoi(argv[3]) : 1;
