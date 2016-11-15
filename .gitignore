@@ -1,3 +1,4 @@
 /msvc/*.sdf
 /msvc/*.suo
 tmp
+bin
