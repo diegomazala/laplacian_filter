@@ -117,23 +117,18 @@ void build_laplacian_matrix(
 		}
 
 		aiVector3D d = ((Decimal)1.0 / (adj.size() - 1)) * sum;
+		//aiVector3D d = (Decimal)1.0 / (adj.size()) * (sum - vi);
+		//aiVector3D d = sum;
 		delta(i, 0) = d.x;
 		delta(i, 1) = d.y;
 		delta(i, 2) = d.z;
-		//delta(0, i) = d.x;
-		//delta(1, i) = d.y;
-		//delta(2, i) = d.z;
 		i++;
 	}
 
 
 //	std::cout << std::endl << "delta " << std::endl << delta << std::endl;
 
-	// adding two anchors
-	//L(N, 0) = 1;
-	//L(N + 1, N - 1) = 1;
 	
-
 	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> A(N + Anchors, N);
 	A.setZero();
 	A.block(0, 0, L.rows(), L.cols()) = L;
@@ -145,6 +140,7 @@ void build_laplacian_matrix(
 	//std::cout << std::endl << "b " << std::endl << b << std::endl;
 	//std::cout << std::endl << "adding anchors ..." << std::endl;
 
+	// adding two anchors
 	for (i = 0; i < Anchors; ++i)
 	{
 		uint32_t ctrl_ind = control_indices[i];
@@ -152,14 +148,6 @@ void build_laplacian_matrix(
 		A(N + i, ctrl_ind) = 1;
 		b.row(N + i) = delta.row(ctrl_ind);
 	}
-
-	//A(N, 0) = 1;
-	//A(N + 1, 3) = 1;
-	//A(N + 2, N - 1) = 1;		
-	//b.row(N + 0) = delta.row(0);
-	//b.row(N + 1) = delta.row(3);
-	//b.row(N + 2) = delta.row(N - 1);
-	
 
 
 	//std::cout << std::endl << "A " << std::endl << A << std::endl;
@@ -202,12 +190,13 @@ int main(int argc, char* argv[])
 {
 	std::cout
 		<< std::endl
-		<< "Usage            : ./<app.exe> <input_model> <output_format> <iterations>" << std::endl
-		<< "Default          : ./laplacian_filter.exe ../../data/teddy.obj obj 1" << std::endl
+		<< "Usage            : ./<app.exe> <input_model> <control_indices_file> <output_format>" << std::endl
+		<< "Default          : ./laplacian_meshes.exe ../../data/plane_5.obj plane.ctrl_ind obj" << std::endl
 		<< std::endl;
 
 	const std::string input_filename = (argc > 1) ? argv[1] : "../../data/sample_plane.obj";
-	const std::string output_format = (argc > 2) ? argv[2] : "obj";
+	const std::string control_indices_filename = (argc > 2) ? argv[2] : "../../data/plane.ctrl_ind";
+	const std::string output_format = (argc > 3) ? argv[3] : "obj";
 
 	std::stringstream ss;
 	ss << input_filename.substr(0, input_filename.size() - 4)
@@ -238,17 +227,43 @@ int main(int argc, char* argv[])
 		<< "Faces            : " << mesh->mNumFaces << std::endl;
 
 
+	// 
+	// read control indices
+	//
+	std::vector<uint32_t> control_indices = { 0, 1, 2, 3 };
+	std::ifstream in_file(control_indices_filename);
+	std::cout
+		<< "Control Indices  : ";
+	if (in_file.is_open())
+	{
+		control_indices.clear();
+
+		while (!in_file.eof())
+		{
+			uint32_t ind = 0;
+			in_file >> ind;
+			std::cout << ' ' << ind;
+			control_indices.push_back(ind);
+		}
+	}
+	std::cout << std::endl << std::endl;
+
+
+
 	//
 	// Compute vertices adjacency
 	//
 	std::vector<std::vector<uint32_t>> vertices_adj(mesh->mNumVertices);
 	compute_adjacency(mesh, vertices_adj);
 
+	
 	//
 	// Build laplacian matrix
 	//
 	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> result;
-	std::vector<uint32_t> control_indices = { 0, 1, 3 };
+	
+
+
 	build_laplacian_matrix(vertices_adj, mesh->mVertices, mesh->mNumVertices, control_indices, result);
 
 
