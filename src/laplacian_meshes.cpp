@@ -4,6 +4,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <Eigen/IterativeLinearSolvers>
 
 #include <assimp/Importer.hpp>      // C++ importer interface
 #include <assimp/Exporter.hpp>      // C++ exporter interface
@@ -79,6 +80,13 @@ void build_laplacian_matrix(
 	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> delta(N, 3);
 	delta.setZero();
 
+	Eigen::Matrix<Decimal, Eigen::Dynamic, 1> delta_x(N);
+	Eigen::Matrix<Decimal, Eigen::Dynamic, 1> delta_y(N);
+	Eigen::Matrix<Decimal, Eigen::Dynamic, 1> delta_z(N);
+	delta_x.setZero();
+	delta_y.setZero();
+	delta_z.setZero();
+
 	//            -
 	//            | d_i     i = j
 	// (L_s)_ij = | -1      (i, j) are neighbours
@@ -116,17 +124,25 @@ void build_laplacian_matrix(
 			sum += (vi - vj);
 		}
 
+
+		
+
 		aiVector3D d = ((Decimal)1.0 / (adj.size() - 1)) * sum;
 		//aiVector3D d = (Decimal)1.0 / (adj.size()) * (sum - vi);
 		//aiVector3D d = sum;
 		delta(i, 0) = d.x;
 		delta(i, 1) = d.y;
 		delta(i, 2) = d.z;
+
+		delta_x(i) = d.x;
+		delta_y(i) = d.y;
+		delta_z(i) = d.z;
+
 		i++;
 	}
 
 
-//	std::cout << std::endl << "delta " << std::endl << delta << std::endl;
+	//std::cout << std::endl << "delta " << std::endl << delta << std::endl;
 
 	
 	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> A(N + Anchors, N);
@@ -137,43 +153,76 @@ void build_laplacian_matrix(
 	b.setZero();
 	b.block(0, 0, delta.rows(), delta.cols()) = delta;
 
+	Eigen::Matrix<Decimal, Eigen::Dynamic, 1> b_x(N + Anchors);
+	Eigen::Matrix<Decimal, Eigen::Dynamic, 1> b_y(N + Anchors);
+	Eigen::Matrix<Decimal, Eigen::Dynamic, 1> b_z(N + Anchors);
+	b_x.setZero();
+	b_y.setZero();
+	b_z.setZero();
+
+	
+	for (i = 0; i < N; ++i)
+	{
+		b_x(i, 0) = delta_x(i, 0);
+		b_y(i, 0) = delta_y(i, 0);
+		b_z(i, 0) = delta_z(i, 0);
+	}
+
 	//std::cout << std::endl << "b " << std::endl << b << std::endl;
 	//std::cout << std::endl << "adding anchors ..." << std::endl;
 
-	// adding two anchors
+	// adding anchors
 	for (i = 0; i < Anchors; ++i)
 	{
-		uint32_t ctrl_ind = control_indices[i];
+		const uint32_t ctrl_ind = control_indices[i];
 		
 		A(N + i, ctrl_ind) = 1;
 		b.row(N + i) = delta.row(ctrl_ind);
+
+		b_x(N + i, 0) = src_vertices[ctrl_ind].x;
+		b_y(N + i, 0) = src_vertices[ctrl_ind].y;
+		b_z(N + i, 0) = src_vertices[ctrl_ind].z;
 	}
 
 
-	//std::cout << std::endl << "A " << std::endl << A << std::endl;
-	//std::cout << std::endl << "b " << std::endl << b << std::endl;
+	std::cout << std::endl << "A " << std::endl << A << std::endl;
+	std::cout << std::endl << "b " << std::endl << b << std::endl;
 	//std::cout << "A size: " << A.rows() << ' ' << A.cols() << std::endl;
 	//std::cout << "b size: " << b.rows() << ' ' << b.cols() << std::endl;
 
-	//result = A.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV).solve(b);
-	//std::cout << std::endl << "x " << std::endl << result << std::endl;
-
-
-
-
-
 	// Solving:
 	Eigen::SparseMatrix<Decimal> sparse_A(A.sparseView());
+	//Eigen::SparseMatrix<Decimal> sparse_L(L.sparseView());
 	//std::cout << std::endl << "sparse_A " << std::endl << sparse_A << std::endl;
 	//std::cout << "sparse A size: " << sparse_A.rows() << ' ' << sparse_A.cols() << std::endl;
 	
-	//Eigen::SparseLU<Eigen::SparseMatrix<Decimal>, Eigen::COLAMDOrdering<int> >   solver;
+	//Eigen::SimplicialLLT<Eigen::SparseMatrix<Decimal>>   solver(sparse_L);
+	//Eigen::SimplicialCholesky<Eigen::SparseMatrix<Decimal>>   solver(sparse_L);
 	Eigen::SparseQR<Eigen::SparseMatrix<Decimal>, Eigen::COLAMDOrdering<int> >   solver;
-	solver.analyzePattern(sparse_A);
-	solver.factorize(sparse_A);
-	//Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> x = solver.solve(b);
+	solver.compute(sparse_A);
 
-	result = solver.solve(b);
+	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> result_x = solver.solve(b_x);
+	//std::cout << "\nSolver b_x \n" << result_x << std::endl;
+
+	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> result_y = solver.solve(b_y);
+	////std::cout << "\nSolver b_y \n" << result_y << std::endl;
+
+	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> result_z = solver.solve(b_z);
+	////std::cout << "\nSolver b_z \n" << result_z << std::endl;
+	
+	//result = solver.solve(b);
+	//std::cout << "\nSolver b \n" << result << std::endl;
+
+	result = Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic>::Zero(sparse_A.cols(), 3);
+
+	for (i = 0; i < result.rows(); ++i)
+	{
+		result(i, 0) = result_x(i);
+		result(i, 1) = result_y(i);
+		result(i, 2) = result_z(i);
+	}
+
+	//std::cout << "\nSolver b xyz \n" << result << std::endl << std::endl;
 
 	if (solver.info() != Eigen::Success) 
 		std::cout << "Solver Failed!" << std::endl;
@@ -233,7 +282,7 @@ int main(int argc, char* argv[])
 	std::vector<uint32_t> control_indices = { 0, 1, 2, 3 };
 	std::ifstream in_file(control_indices_filename);
 	std::cout
-		<< "Control Indices  : ";
+		<< "Control Indices  :";
 	if (in_file.is_open())
 	{
 		control_indices.clear();
@@ -265,7 +314,7 @@ int main(int argc, char* argv[])
 
 
 	build_laplacian_matrix(vertices_adj, mesh->mVertices, mesh->mNumVertices, control_indices, result);
-
+	
 
 	//
 	// Copy result to mesh
