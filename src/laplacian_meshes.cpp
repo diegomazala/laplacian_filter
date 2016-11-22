@@ -54,6 +54,7 @@ void build_laplacian_matrix(
 	const aiVector3D* src_vertices,
 	uint32_t number_of_vertices,
 	const std::vector<uint32_t> control_indices,
+	ai_real weight,
 	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic>& result)
 {
 
@@ -176,17 +177,21 @@ void build_laplacian_matrix(
 	{
 		const uint32_t ctrl_ind = control_indices[i];
 		
-		A(N + i, ctrl_ind) = 1;
+		A(N + i, ctrl_ind) = weight;
 		b.row(N + i) = delta.row(ctrl_ind);
 
-		b_x(N + i, 0) = src_vertices[ctrl_ind].x;
-		b_y(N + i, 0) = src_vertices[ctrl_ind].y;
-		b_z(N + i, 0) = src_vertices[ctrl_ind].z;
+		b_x(N + i, 0) = weight * src_vertices[ctrl_ind].x;
+		b_y(N + i, 0) = weight * src_vertices[ctrl_ind].y;
+		b_z(N + i, 0) = weight * src_vertices[ctrl_ind].z;
 	}
 
 
-	std::cout << std::endl << "A " << std::endl << A << std::endl;
-	std::cout << std::endl << "b " << std::endl << b << std::endl;
+
+	//std::cout << std::endl << "A " << std::endl << A << std::endl;
+	//std::cout << std::endl << "b " << std::endl << b << std::endl;
+	//std::cout << std::endl << "b x" << std::endl << b_x.transpose() << std::endl;
+	//std::cout << std::endl << "b y " << std::endl << b_y.transpose() << std::endl;
+	//std::cout << std::endl << "b z " << std::endl << b_z.transpose() << std::endl;
 	//std::cout << "A size: " << A.rows() << ' ' << A.cols() << std::endl;
 	//std::cout << "b size: " << b.rows() << ' ' << b.cols() << std::endl;
 
@@ -239,13 +244,14 @@ int main(int argc, char* argv[])
 {
 	std::cout
 		<< std::endl
-		<< "Usage            : ./<app.exe> <input_model> <control_indices_file> <output_format>" << std::endl
-		<< "Default          : ./laplacian_meshes.exe ../../data/plane_5.obj plane.ctrl_ind obj" << std::endl
+		<< "Usage            : ./<app.exe> <input_model> <control_indices_file> <weight> <output_format>" << std::endl
+		<< "Default          : ./laplacian_meshes.exe ../../data/plane_5.obj plane.ctrl_ind 100 obj" << std::endl
 		<< std::endl;
 
 	const std::string input_filename = (argc > 1) ? argv[1] : "../../data/sample_plane.obj";
 	const std::string control_indices_filename = (argc > 2) ? argv[2] : "../../data/plane.ctrl_ind";
-	const std::string output_format = (argc > 3) ? argv[3] : "obj";
+	const ai_real weight = (ai_real)((argc > 3) ? atof(argv[3]) : 100);
+	const std::string output_format = (argc > 4) ? argv[4] : "obj";
 
 	std::stringstream ss;
 	ss << input_filename.substr(0, input_filename.size() - 4)
@@ -313,7 +319,7 @@ int main(int argc, char* argv[])
 	
 
 
-	build_laplacian_matrix(vertices_adj, mesh->mVertices, mesh->mNumVertices, control_indices, result);
+	build_laplacian_matrix(vertices_adj, mesh->mVertices, mesh->mNumVertices, control_indices, weight, result);
 	
 
 	//
