@@ -152,22 +152,7 @@ void build_laplacian_matrix(
 
 	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> b(N + Anchors, 3);
 	b.setZero();
-	b.block(0, 0, delta.rows(), delta.cols()) = delta;
-
-	Eigen::Matrix<Decimal, Eigen::Dynamic, 1> b_x(N + Anchors);
-	Eigen::Matrix<Decimal, Eigen::Dynamic, 1> b_y(N + Anchors);
-	Eigen::Matrix<Decimal, Eigen::Dynamic, 1> b_z(N + Anchors);
-	b_x.setZero();
-	b_y.setZero();
-	b_z.setZero();
-
-	
-	for (i = 0; i < N; ++i)
-	{
-		b_x(i, 0) = delta_x(i, 0);
-		b_y(i, 0) = delta_y(i, 0);
-		b_z(i, 0) = delta_z(i, 0);
-	}
+	//b.block(0, 0, delta.rows(), delta.cols()) = delta;
 
 	//std::cout << std::endl << "b " << std::endl << b << std::endl;
 	//std::cout << std::endl << "adding anchors ..." << std::endl;
@@ -178,45 +163,29 @@ void build_laplacian_matrix(
 		const uint32_t ctrl_ind = control_indices[i];
 		
 		A(N + i, ctrl_ind) = weight;
-		b.row(N + i) = delta.row(ctrl_ind);
-
-		b_x(N + i, 0) = weight * src_vertices[ctrl_ind].x;
-		b_y(N + i, 0) = weight * src_vertices[ctrl_ind].y;
-		b_z(N + i, 0) = weight * src_vertices[ctrl_ind].z;
+		b.row(N + i).x() = weight * src_vertices[ctrl_ind].x;
+		b.row(N + i).y() = weight * src_vertices[ctrl_ind].y;
+		b.row(N + i).z() = weight * src_vertices[ctrl_ind].z;
 	}
 
 
 
 	//std::cout << std::endl << "A " << std::endl << A << std::endl;
 	//std::cout << std::endl << "b " << std::endl << b << std::endl;
-	//std::cout << std::endl << "b x" << std::endl << b_x.transpose() << std::endl;
-	//std::cout << std::endl << "b y " << std::endl << b_y.transpose() << std::endl;
-	//std::cout << std::endl << "b z " << std::endl << b_z.transpose() << std::endl;
 	//std::cout << "A size: " << A.rows() << ' ' << A.cols() << std::endl;
 	//std::cout << "b size: " << b.rows() << ' ' << b.cols() << std::endl;
 
 	// Solving:
 	Eigen::SparseMatrix<Decimal> sparse_A(A.sparseView());
-	//Eigen::SparseMatrix<Decimal> sparse_L(L.sparseView());
-	//std::cout << std::endl << "sparse_A " << std::endl << sparse_A << std::endl;
-	//std::cout << "sparse A size: " << sparse_A.rows() << ' ' << sparse_A.cols() << std::endl;
 	
 	//Eigen::SimplicialLLT<Eigen::SparseMatrix<Decimal>>   solver(sparse_L);
 	//Eigen::SimplicialCholesky<Eigen::SparseMatrix<Decimal>>   solver(sparse_L);
 	Eigen::SparseQR<Eigen::SparseMatrix<Decimal>, Eigen::COLAMDOrdering<int> >   solver;
 	solver.compute(sparse_A);
 
-	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> result_x = solver.solve(b_x);
-	//std::cout << "\nSolver b_x \n" << result_x << std::endl;
-
-	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> result_y = solver.solve(b_y);
-	////std::cout << "\nSolver b_y \n" << result_y << std::endl;
-
-	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> result_z = solver.solve(b_z);
-	////std::cout << "\nSolver b_z \n" << result_z << std::endl;
-	
-	//result = solver.solve(b);
-	//std::cout << "\nSolver b \n" << result << std::endl;
+	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> result_x = solver.solve(b.col(0));
+	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> result_y = solver.solve(b.col(1));
+	Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic> result_z = solver.solve(b.col(2));
 
 	result = Eigen::Matrix<Decimal, Eigen::Dynamic, Eigen::Dynamic>::Zero(sparse_A.cols(), 3);
 
