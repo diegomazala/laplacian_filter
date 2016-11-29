@@ -2,6 +2,7 @@
 #include <fstream>
 #include <algorithm>
 #include <vector>
+#include <random>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <Eigen/IterativeLinearSolvers>
@@ -213,17 +214,18 @@ int main(int argc, char* argv[])
 {
 	std::cout
 		<< std::endl
-		<< "Usage            : ./<app.exe> <input_model> <control_indices_file> <weight> <output_format>" << std::endl
-		<< "Default          : ./laplacian_meshes.exe ../../data/plane_5.obj plane.ctrl_ind 100 obj" << std::endl
+		<< "Usage            : ./<app.exe> <input_model> <percentage_indices> <weight> <output_format>" << std::endl
+		<< "Default          : ./laplacian_meshes.exe ../../data/cow.obj 30 100 obj" << std::endl
 		<< std::endl;
 
 	const std::string input_filename = (argc > 1) ? argv[1] : "../../data/sample_plane.obj";
-	const std::string control_indices_filename = (argc > 2) ? argv[2] : "../../data/plane.ctrl_ind";
+	const ai_real percentage_of_control_points = (ai_real)((argc > 2) ? atoi(argv[2]) * 0.01 : 0.3);
 	const ai_real weight = (ai_real)((argc > 3) ? atof(argv[3]) : 100);
 	const std::string output_format = (argc > 4) ? argv[4] : "obj";
 
 	std::stringstream ss;
 	ss << input_filename.substr(0, input_filename.size() - 4)
+		<< '_' << (int)(percentage_of_control_points * 100)
 		<< "_out." << output_format;
 	std::string output_filename = ss.str();
 
@@ -252,25 +254,22 @@ int main(int argc, char* argv[])
 
 
 	// 
-	// read control indices
+	// generating control indices
 	//
-	std::vector<uint32_t> control_indices = { 0, 1, 2, 3 };
-	std::ifstream in_file(control_indices_filename);
-	std::cout
-		<< "Control Indices  :";
-	if (in_file.is_open())
+	const uint32_t control_points_count = static_cast<uint32_t>(mesh->mNumVertices * percentage_of_control_points);
+	std::vector<uint32_t> control_indices(control_points_count);
+	std::cout << "Control Points   : " << control_indices.size() << std::endl;
+	//
+	// Random control indices
+	//
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(0, mesh->mNumVertices);
+	for (uint32_t i = 0; i < control_indices.size(); ++i)
 	{
-		control_indices.clear();
-
-		while (!in_file.eof())
-		{
-			uint32_t ind = 0;
-			in_file >> ind;
-			std::cout << ' ' << ind;
-			control_indices.push_back(ind);
-		}
+		control_indices[i] = dis(gen);
 	}
-	std::cout << std::endl << std::endl;
+
 
 
 
